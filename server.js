@@ -15,26 +15,29 @@ var rooms = {
   }
 };
 const PORT = 3001;
-user = 0; 
 
 io.on('connection', (socket) => {
   // console.log('a user connected');
   socket.on('send roomId',(roomId,state)=>{
-    if(roomId in rooms)
-    {
+    if(roomId in rooms){
       console.log(roomId+' room present');
-      if(user===0) 
-      {
-        rooms[roomId] = {...rooms[roomId],state}; 
-        user=1;
+      if(rooms[roomId].users===0) {
+        rooms[roomId] = {users:1,state}; 
         socket.emit('user',1,rooms[roomId].state);
       }
-      else if(user===1)
-      {
-        user=2;
+      else if(rooms[roomId].users===1){
+        rooms[roomId] = {...rooms[roomId],users:2}; 
         socket.emit('user',2,rooms[roomId].state);
         io.emit('second joined');
       } 
+    }
+    else{
+      console.log("New room "+roomId);
+      rooms[roomId] = {
+        state,
+        users:1 
+      }
+      socket.emit('user',1,rooms[roomId].state);      
     }
   });  
   
