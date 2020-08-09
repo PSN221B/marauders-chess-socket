@@ -8,6 +8,7 @@ const io = require('socket.io')(server);
   2 - bothw white and black present
   3 - only black present
 */
+var roomNo = 1;
 var rooms = {
   111:{
     state:null,
@@ -17,39 +18,46 @@ var rooms = {
 const PORT = 3001;
 
 io.on('connection', (socket) => {
-  // console.log('a user connected');
-  socket.on('send roomId',(roomId,state)=>{
+  console.log('a user connected');
+  // console.log(roomNo);
+  socket.on('create room',(state)=>{
+    console.log("New room "+roomNo);
+    socket.join(roomNo);
+    socket.emit('room created',roomNo);
+    rooms[roomNo] = {
+      state,
+      user1:true,
+      user2:false 
+    }
+    socket.emit('user',1,rooms[roomNo].state);  
+    roomNo+=1;
+  });
+
+  socket.on('send roomId',(roomId)=>{    
     if(roomId in rooms){
       console.log(roomId+' room present');
-      if(rooms[roomId].users===0) {
-        rooms[roomId] = {users:1,state}; 
-        socket.emit('user',1,rooms[roomId].state);
-      }
-      else if(rooms[roomId].users===1){
-        rooms[roomId] = {...rooms[roomId],users:2}; 
-        socket.emit('user',2,rooms[roomId].state);
-        io.emit('second joined');
-      } 
+      socket.join(roomId);
+      rooms[roomId] = {...rooms[roomId],user2:true}; 
+      socket.emit('user',2,rooms[roomId].state);
+      io.to(roomId).emit('second joined'); 
     }
     else{
-      console.log("New room "+roomId);
-      rooms[roomId] = {
-        state,
-        users:1 
-      }
-      socket.emit('user',1,rooms[roomId].state);      
+      // When a room with this ID is not created 
+      socket.disconnect(true);
     }
-  });  
-  
+  });
+
   // When some move is made
   socket.on('move made',(state)=>{
-    // Send all players the new state of the game
-    io.emit('board changed',state);  
+    // Send all players belonging to same room the new state of the game
+    console.log('Move made in room '+rooms[0]);
+    let rooms = Object.keys(socket.rooms);
+    io.to(rooms[0]).emit('board changed',state);  
   });
 
   socket.on('disconnect', () => {
     console.log('user disconnected');
-
+    delete sockets[socket.id];
   });
 });  
 
