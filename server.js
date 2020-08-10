@@ -50,14 +50,13 @@ io.on('connection', (socket) => {
   // When some move is made
   socket.on('move made',(state)=>{
     // Send all players belonging to same room the new state of the game
-    console.log('Move made in room '+rooms[0]);
     let rooms = Object.keys(socket.rooms);
+    console.log('Move made in room '+rooms[0]);
     io.to(rooms[0]).emit('board changed',state);  
   });
 
   socket.on('disconnect', () => {
     console.log('user disconnected');
-    delete sockets[socket.id];
   });
 });  
 
